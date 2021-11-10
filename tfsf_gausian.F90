@@ -89,9 +89,9 @@ module tfsf_gausian
         !$omp parallel do
         do i=ibd0,ibd1-1
             j = jbd0
-            ex(i,j) = ex(i,j) - bexy(i,j)*hzinc_gausian(i,j-1)
+            !ex(i,j) = ex(i,j) - bexy(i,j)*hzinc_gausian(i,j-1)
             j = jbd1
-            ex(i,j) = ex(i,j) + bexy(i,j)*hzinc_gausian(i,j)
+            !ex(i,j) = ex(i,j) + bexy(i,j)*hzinc_gausian(i,j)
         enddo
         !$omp end parallel do
 
@@ -99,7 +99,7 @@ module tfsf_gausian
         !$omp parallel do
         do j=jbd0,jbd1-1
             i = ibd0
-            ey(i,j) = ey(i,j) + beyx(i,j)*hzinc_gausian(i-1,j)
+            !ey(i,j) = ey(i,j) + beyx(i,j)*hzinc_gausian(i-1,j)
             i = ibd1
             ey(i,j) = ey(i,j) - beyx(i,j)*hzinc_gausian(i,j)
         enddo
@@ -109,7 +109,7 @@ module tfsf_gausian
         !$omp parallel do
         do j=jbd0,jbd1
             i = ibd0
-            ez(i,j) = ez(i,j) - bezx(i,j)*hyinc_gausian(i-1,j)
+            !ez(i,j) = ez(i,j) - bezx(i,j)*hyinc_gausian(i-1,j)
             i = ibd1
             ez(i,j) = ez(i,j) + bezx(i,j)*hyinc_gausian(i,j)
         enddo
@@ -118,9 +118,9 @@ module tfsf_gausian
         !$omp parallel do
         do i=ibd0,ibd1
             j = jbd0
-            ez(i,j) = ez(i,j) + bezy(i,j)*hxinc_gausian(i,j-1)
+            !ez(i,j) = ez(i,j) + bezy(i,j)*hxinc_gausian(i,j-1)
             j = jbd1
-            ez(i,j) = ez(i,j) - bezy(i,j)*hxinc_gausian(i,j)
+            !ez(i,j) = ez(i,j) - bezy(i,j)*hxinc_gausian(i,j)
         enddo
         !$omp end parallel do
 
@@ -135,9 +135,9 @@ module tfsf_gausian
         !$omp parallel do
         do i=ibd0,ibd1
             j = jbd0-1
-            hx(i,j) = hx(i,j) + bmxy(i,j)*ezinc_gausian(i,j+1)
+            !hx(i,j) = hx(i,j) + bmxy(i,j)*ezinc_gausian(i,j+1)
             j = jbd1
-            hx(i,j) = hx(i,j) - bmxy(i,j)*ezinc_gausian(i,j)
+            !hx(i,j) = hx(i,j) - bmxy(i,j)*ezinc_gausian(i,j)
         enddo
         !$omp end parallel do
 
@@ -147,7 +147,7 @@ module tfsf_gausian
             i = ibd0-1
             hy(i,j) = hy(i,j) - bmyx(i,j)*ezinc_gausian(i+1,j)
             i = ibd1
-            hy(i,j) = hy(i,j) + bmyx(i,j)*ezinc_gausian(i,j)
+            !hy(i,j) = hy(i,j) + bmyx(i,j)*ezinc_gausian(i,j)
         enddo
         !$omp end parallel do
 
@@ -155,9 +155,9 @@ module tfsf_gausian
         !$omp parallel do
         do i=ibd0,ibd1-1
             j = jbd0-1
-            hz(i,j) = hz(i,j) - bmzy(i,j)*exinc_gausian(i,j+1)
+            !hz(i,j) = hz(i,j) - bmzy(i,j)*exinc_gausian(i,j+1)
             j = jbd1
-            hz(i,j) = hz(i,j) + bmzy(i,j)*exinc_gausian(i,j)
+            !hz(i,j) = hz(i,j) + bmzy(i,j)*exinc_gausian(i,j)
         enddo
         !$omp end parallel do
 

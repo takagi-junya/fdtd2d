@@ -63,7 +63,6 @@ subroutine out_emf(n)
          call hdfopen(filename(9),groupname(9),file_id(9),group_id(9),0)
       endif
    elseif(mod(int(n-ostart),out).eq.0) then
-      h5count = h5count + 1  
       write(tag,'(I4.4)') h5count
       write(*,'(/,a7,a4,/)')'h5 out:',tag
       if(comp(1).eq.1) then
@@ -93,6 +92,8 @@ subroutine out_emf(n)
       if(comp(9).eq.1) then
          call wrt2d(file_id(9),group_id(9),tag,dims,jz(is:ie:stride,js:je:stride),istat1(9),istat2(9))
       endif
+      
+      h5count = h5count + 1  
    elseif(n.eq.nstep) then
       if(comp(1).eq.1) then
          call hdfclose(file_id(1),group_id(1),error(1))

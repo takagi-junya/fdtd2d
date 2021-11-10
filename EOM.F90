@@ -17,7 +17,18 @@ subroutine EOM()
     write(30,'(a8,e10.3)')"omegap:",wp 
     write(30,'(a16,e10.3)')"collision freq:",nu
     write(30,'(a21,f10.2,/)')"thickness of plasma:",prad-radius
-    ajj = dt/eps0
+    
+    ajj = dt/eps0 
+
+    omat = dt/2.0d0*omat
+    sa = adding_mat(imat(:,:),omat(:,:))
+    sa = inversing_mat(sa(:,:))
+
+    sb = adding_mat(imat(:,:),-omat(:,:))
+
+    sab = matmul(sa,sb)
+    tc = qe*dt/mel*sa
+
     do j=0,ny
         do i=0,nx
             if(cy_rad(i,j).le.prad.and.cy_rad(i+1,j).le.prad) then

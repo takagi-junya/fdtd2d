@@ -6,14 +6,16 @@ subroutine epsmu()
     implicit none
     integer :: i,j
     real(kind=8) sp_rad,cy_rad
-    write(30,*)"object location:"," ic:",ic," jc:",jc
     
-    if(obj==1) then
-        write(30,*)"object:cylinder"
-        write(30,*)"thickness of dielec:",erad-prad
-        write(30,*)""
-        do j=0,ny
-            do i=0,nx
+    if(med.eq.3) then
+        if(myrank.eq.0) then
+            write(30,'(a15)')"set Dielectric"
+            write(30,*)"object:cylinder"
+            write(30,*)"thickness of dielec:",erad-prad
+            write(30,*)""
+        endif
+        do j=jstart,jend
+            do i=istart,iend
                 if(cy_rad(i,j).le.erad.and.cy_rad(i+1,j).le.erad) then
                     if(cy_rad(i,j).ge.prad.and.cy_rad(i+1,j).ge.prad) then
                         epsd(i,j) = epsr
@@ -29,7 +31,7 @@ subroutine epsmu()
                     endif
                 endif
                 if(cy_rad(i,j).le.erad.and.cy_rad(i,j+1).le.erad) then
-                    if(cy_rad(i,j).ge.prad.and.cy_raD(i,j+1).ge.prad) then
+                    if(cy_rad(i,j).ge.prad.and.cy_rad(i,j+1).ge.prad) then
                         epsd(i,j) = epsr
                         mud(i,j) = 1.0d0
                         sgmed(i,j) = 0.0d0
@@ -59,7 +61,7 @@ subroutine epsmu()
                 endif
             end do
         end do
-    else if(obj==2) then
+    else if(obj.eq.2) then
         write(30,*)"object:proper prism"
         do j=jc-ly2,jc+ly2-1
             do i=ic-lx2,ic+lx2-1
@@ -69,11 +71,11 @@ subroutine epsmu()
                 sgmmd(i,j) = 0.0d0
             enddo
         enddo
-    else if(obj==3) then
+    else if(obj.eq.3) then
         write(30,*)"object:dielec cylinder"
         write(30,*)""
-        do j=0,ny
-            do i=0,nx
+        do j=jstart,jend
+            do i=istart,iend
                 if(cy_rad(i,j).le.erad.and.cy_rad(i+1,j).le.erad) then
                     if(cy_rad(i,j).ge.prad.and.cy_rad(i+1,j).ge.prad) then
                         epsd(i,j) = epsr

@@ -1,11 +1,13 @@
 module constants
-   use HDF5              
+   use HDF5        
+   use MPI      
     
    !/space/
    integer :: nxx,nyy           
-   real(kind=8) :: dx,dy                 
+   real(kind=8) :: dx,dy   
+   integer :: pbc              
    integer :: abc
-   integer :: pbc(3),lpml(3)
+   integer :: lpml(2)
 
    !/time/
    real(kind=8) :: t
@@ -15,14 +17,15 @@ module constants
 
    !/output/
    integer :: out                      
-   integer :: ostart
+   integer :: ostart,oend
    integer :: odom(4)
    integer :: stride                
    integer :: comp(9)              
    integer :: io,jo             
                 
    !/scat/
-   integer :: mode            
+   integer :: mode
+   integer :: wshape       
    integer ::lx,ly              
    real(kind=8) :: gamma0,theta0,phi0,amp
    real(kind=8) :: lambda,tau0,freq,omega
@@ -38,14 +41,10 @@ module constants
    integer :: lx2,ly2                    
    real(kind=8) :: epsr,radius                 
    
-   !/feed/
-   integer :: ip,jp,kp
-   real(kind=8) :: duration,t0
-   
    !/wave/
    integer :: kwave
    real(kind=8) :: tau
-   real(kind=8) :: amps(6)
+   real(kind=8) :: amps(3)
    real(kind=8) :: orgs(3)
    real(kind=8) :: ang(3)              
    real(kind=8) :: pc,pt,pw
@@ -54,7 +53,8 @@ module constants
    !/plasma
    integer :: pls
    real(kind=8) :: prad,erad
-   real(kind=8) :: nu,wp
+   real(kind=8) :: nu,wp,wc(3)
+   real(kind=8) :: imat(3,3),omat(3,3),sa(3,3),sb(3,3),sab(3,3),tc(3,3)
 
    integer ::ifed,jfed,kfed
    !PML
@@ -69,8 +69,17 @@ module constants
    !HDF5
    integer :: h5count
 
-    
-   
+   !MPI
+   integer :: prx,pry
+   integer :: mpierr,comm,comm2d,pcomm,edge,pml_edge,info,nprocs,myrank
+   integer :: east,west,north,south,coords(2)
+   integer :: peast,pwest,pnorth,psouth
+   integer :: istart,iend,jstart,jend,lx0,lx1,ly1
+   integer,parameter :: ndim=2
+   logical,parameter :: isperiodic(2)=(/.false.,.false./),pisperiodic(2)=(/.true.,.true./),reorder=.true.
+   integer :: ndims(2)
+   integer :: mp_status(MPI_STATUS_SIZE,4)
+
    real(kind=8) :: mux,muy,muz
    real(kind=8) :: a,epsx,epsy,epsz,sgmx,sgmy,sgmz,sgmm
    real(kind=8) :: sgex,sgey,sgez
@@ -84,6 +93,7 @@ module constants
    real(kind=8),allocatable :: jx(:,:),jy(:,:),jz(:,:)
    real(kind=8),allocatable :: vx(:,:),vy(:,:),vz(:,:)
    real(kind=8),allocatable :: nd(:,:)
+   real(kind=8),allocatable :: tmpyl(:),tmpyr(:),tmpyu(:),tmpyd(:)
     
    real(kind=8),allocatable :: aex(:,:),aey(:,:),aez(:,:)
    real(kind=8),allocatable :: bexy(:,:),bexz(:,:)

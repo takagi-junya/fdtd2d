@@ -1,11 +1,14 @@
 module farfield
     use constants
     implicit none
+    integer :: jm12j0,jm12j1,im34i0,im34i1
     integer :: i0,i1,j0,j1  !積分面の位置
     real(kind=8) :: ic0,jc0         !閉曲線の中心
-    integer :: ms,me,mf        !計算スタート、エンド時刻
+    integer :: ms,me,mf,mdcount 
     real(kind=8) :: rrmax
     real(kind=8) :: theta,phi
+    real(kind=8),allocatable :: rwx(:),rwy(:),rwz(:)
+    real(kind=8),allocatable :: rux(:),ruy(:),ruz(:)
     real(kind=8),allocatable :: wx(:),wy(:),wz(:)
     real(kind=8),allocatable :: ux(:),uy(:),uz(:)
     real(kind=8),allocatable :: wphi(:),wzz(:),uphi(:),uzz(:)
@@ -18,7 +21,6 @@ module farfield
     subroutine init_far()
         use constants
         implicit none
-        write(30,'(a14)')"set farfield"
         !観測点角度
         theta1 = 90.0d0
         theta = theta1*radi0
@@ -30,20 +32,52 @@ module farfield
         j0 = lpml(2)+isy
         j1 = ny-lpml(2)-isy
 
+        jm12j0 = jstart 
+        jm12j1 = jend 
+        if((coords(1).eq.0.or.coords(1).eq.ndims(1)-1).and.coords(2).eq.0) then
+            jm12j0 = j0
+        endif
+        if((coords(1).eq.0.or.coords(1).eq.ndims(1)-1).and.coords(2).eq.ndims(2)-1) then
+            jm12j1 = j1 
+        endif  
+
+        im34i0 = istart 
+        im34i1 = iend 
+        if((coords(2).eq.0.or.coords(2).eq.ndims(2)-1).and.coords(1).eq.0) then
+            im34i0 = i0
+        endif
+        if((coords(2).eq.0.or.coords(2).eq.ndims(2)-1).and.coords(1).eq.ndims(1)-1) then
+            im34i1 = i1 
+        endif  
+
         !閉曲線の中心
         ic0 = (i0+i1)*0.5d0
         jc0 = (j0+j1)*0.5d0
+        if(myrank.eq.0) then
+            write(*,*)"ic0",ic0,"jc0",jc0
+        endif
 
         ct = c*dt
         rrmax = sqrt(((i0-ic0)*dx)**2.0d0+((j0-jc0)*dy)**2.0d0)
         ms = intf(1.0-rrmax/ct)
         me = intf(1.5+rrmax/ct)+nstep
+        mdcount = me-ms+1
         mf = ms+nstep
 
         allocate(wx(ms:me),wy(ms:me),wz(ms:me))
         allocate(ux(ms:me),uy(ms:me),uz(ms:me))
-        allocate(wzz(ms:me),wphi(ms:me),uzz(ms:me),uphi(ms:me))
-        allocate(dphi(ms:me),dzz(ms:me))
+        if(myrank.eq.0) then 
+            allocate(rwx(ms:me),rwy(ms:me),rwz(ms:me))
+            allocate(rux(ms:me),ruy(ms:me),ruz(ms:me)) 
+            allocate(wzz(ms:me),wphi(ms:me),uzz(ms:me),uphi(ms:me))
+            allocate(dphi(ms:me),dzz(ms:me))
+            rwx = 0.0d0
+            rwy = 0.0d0
+            rwz = 0.0d0
+            rux = 0.0d0
+            ruy = 0.0d0
+            ruz = 0.0d0
+        endif
         wx = 0.0d0
         wy = 0.0d0
         wz = 0.0d0
@@ -60,24 +94,38 @@ module farfield
         px =-sin(phi)
         py = cos(phi)
 
-        write(30,'(a20,i5,a5,i5)')"Far field start:",ms,"end:",me
-        write(30,'(a30,f10.2,a5,f10.2)')"Observation  angle theta:",theta1,"phi:",phi1
-        
+        if(myrank.eq.0) then
+            write(30,'(a13)')"set farfield"
+            write(30,'(a17,i7.7,a5,i5.6)')"Far field start:",ms,"end:",me
+            write(30,'(a26,f10.2,a5,f10.2)')"Observation  angle theta:",theta1,"phi:",phi1
+            write(30,'(a5,i5,a5,i5)')"ic0:",ic0,"jc0:",jc0
+        endif
     end subroutine
 
     subroutine out_far()
         use constants
         implicit none
         integer ::m
-        do m=ms,me
-            wphi(m)= wx(m)*px+wy(m)*py
-            wzz(m) = wx(m)*sx+wy(m)*sy+wz(m)*sz
-            uphi(m)= ux(m)*px+uy(m)*py
-            uzz(m) = ux(m)*sx+uy(m)*sy+uz(m)*sz
-            dphi(m)=-z0*wphi(m)+uzz(m)
-            dzz(m) =-z0*wzz(m) -uphi(m)
-        end do
-        call empotential
+        
+        call mpi_reduce(wx(ms),rwx(ms),mdcount,MPI_DOUBLE_PRECISION,MPI_SUM,0,comm2d,mpierr)
+        call mpi_reduce(wy(ms),rwy(ms),mdcount,MPI_DOUBLE_PRECISION,MPI_SUM,0,comm2d,mpierr)
+        call mpi_reduce(wz(ms),rwz(ms),mdcount,MPI_DOUBLE_PRECISION,MPI_SUM,0,comm2d,mpierr)
+        
+        call mpi_reduce(ux(ms),rux(ms),mdcount,MPI_DOUBLE_PRECISION,MPI_SUM,0,comm2d,mpierr)
+        call mpi_reduce(uy(ms),ruy(ms),mdcount,MPI_DOUBLE_PRECISION,MPI_SUM,0,comm2d,mpierr)
+        call mpi_reduce(uz(ms),ruz(ms),mdcount,MPI_DOUBLE_PRECISION,MPI_SUM,0,comm2d,mpierr)
+
+        if(myrank.eq.0) then
+            do m=ms,me
+                wphi(m)= rwx(m)*px+rwy(m)*py
+                wzz(m) = rwx(m)*sx+rwy(m)*sy+rwz(m)*sz
+                uphi(m)= rux(m)*px+ruy(m)*py
+                uzz(m) = rux(m)*sx+ruy(m)*sy+ruz(m)*sz
+                dphi(m)=-z0*wphi(m)+uzz(m)
+                dzz(m) =-z0*wzz(m) -uphi(m)
+            end do
+            call empotential
+        endif
     end subroutine out_far
     
     subroutine  empotential()
@@ -86,7 +134,7 @@ module farfield
         use constants
         implicit none
         integer :: m
-        dim2(1) = nstep+1
+        dim2(1) = nstep+1 
         call hdfopen(filename(11),datasetname(1),file_id(11),group_id(11),0)
         call wrt1d(file_id(11),group_id(11),datasetname(1),dim2,wphi(:),istat1(11),istat2(11))
         call hdfclose(file_id(11),group_id(11),error(11))
@@ -116,22 +164,60 @@ module farfield
 !-----------------------------------------------------------------------
     subroutine jfarfld()
         use constants
+        use MPI
         implicit none
-        call jsur1()
-        call jsur2()
-        call jsur3()
-        call jsur4()
+        if(coords(1).eq.0) then
+            call exchg2dj(hy(istart-1:iend+1,jstart-1:jend+1),lx0)
+            call jsur1()
+        endif
+        !call mpi_reduce(wy(ms),rwy(ms),mdcount,MPI_DOUBLE_PRECISION,MPI_SUM,0,comm2d,mpierr)
+        !call mpi_reduce(wz(ms),rwz(ms),mdcount,MPI_DOUBLE_PRECISION,MPI_SUM,0,comm2d,mpierr)
+        if(coords(1).eq.ndims(1)-1) then
+            call exchg2dj(hy(istart-1:iend+1,jstart-1:jend+1),lx0)
+            call jsur2()
+        endif
+        !call mpi_reduce(wy(ms),rwy(ms),mdcount,MPI_DOUBLE_PRECISION,MPI_SUM,0,comm2d,mpierr)
+        !call mpi_reduce(wz(ms),rwz(ms),mdcount,MPI_DOUBLE_PRECISION,MPI_SUM,0,comm2d,mpierr)
+        if(coords(2).eq.0) then
+            call exchg2di(hx(istart-1:iend+1,jstart-1:jend+1))
+            call jsur3()
+        endif
+        !call mpi_reduce(wx(ms),rwx(ms),mdcount,MPI_DOUBLE_PRECISION,MPI_SUM,0,comm2d,mpierr)
+        !call mpi_reduce(wz(ms),rwz(ms),mdcount,MPI_DOUBLE_PRECISION,MPI_SUM,0,comm2d,mpierr)
+        if(coords(2).eq.ndims(2)-1) then
+            call exchg2di(hx(istart-1:iend+1,jstart-1:jend+1))
+            call jsur4()
+        endif
     end subroutine jfarfld
 !----------------------------------------------------------------------
 !     磁流による寄与
 !----------------------------------------------------------------------
     subroutine mfarfld()
         use constants
+        use MPI
         implicit none
-        call msur1()
-        call msur2()
-        call msur3()
-        call msur4()
+        if(coords(1).eq.0) then
+            call exchg2dj(ez(istart-1:iend+1,jstart-1:jend+1),lx0)
+            call msur1()
+        endif
+        !call mpi_reduce(uy(ms),ruy(ms),mdcount,MPI_DOUBLE_PRECISION,MPI_SUM,0,comm2d,mpierr)
+        !call mpi_reduce(uz(ms),ruz(ms),mdcount,MPI_DOUBLE_PRECISION,MPI_SUM,0,comm2d,mpierr)
+        if(coords(1).eq.ndims(1)-1) then
+            call exchg2dj(ez(istart-1:iend+1,jstart-1:jend+1),lx0)
+            call msur2()
+        endif
+        !call mpi_reduce(uy(ms),ruy(ms),mdcount,MPI_DOUBLE_PRECISION,MPI_SUM,0,comm2d,mpierr)
+        !call mpi_reduce(uz(ms),ruz(ms),mdcount,MPI_DOUBLE_PRECISION,MPI_SUM,0,comm2d,mpierr)
+        if(coords(2).eq.0) then
+            call exchg2di(ez(istart-1:iend+1,jstart-1:jend+1))
+            call msur3()
+        endif
+        !call mpi_reduce(ux(ms),rux(ms),mdcount,MPI_DOUBLE_PRECISION,MPI_SUM,0,comm2d,mpierr)
+        !call mpi_reduce(uz(ms),ruz(ms),mdcount,MPI_DOUBLE_PRECISION,MPI_SUM,0,comm2d,mpierr)
+        if(coords(2).eq.ndims(2)-1) then
+            call exchg2di(ez(istart-1:iend+1,jstart-1:jend+1))
+            call msur4()
+        endif
     end subroutine mfarfld
 
     subroutine jsur1()
@@ -143,13 +229,11 @@ module farfield
         real(kind=8) :: eta,nt,tn
         real(kind=8) :: hyavg,hzavg 
         integer :: i,j,m
-        integer :: myid
         i = i0
         ds = dy
         x = (i-ic0)*dx
         nt = t/dt 
-
-        do j=j0,j1-1
+        do j=jm12j0,jm12j1-1
             y = (j-jc0+0.5d0)*dy
             hyavg = 0.25d0*(hy(i,j)+hy(i-1,j)+hy(i,j+1)+hy(i-1,j+1))
             hzavg = 0.50d0*(hz(i,j)+hz(i-1,j))
@@ -176,7 +260,7 @@ module farfield
         ds = dy 
         x = (i-ic0)*dx
         nt = t/dt
-        do j=j0,j1-1
+        do j=jm12j0,jm12j1-1
             y = (j-jc0+0.5d0)*dy
             eyavg = ey(i,j)
             ezavg = 0.5d0*(ez(i,j)+ez(i,j+1))
@@ -202,7 +286,7 @@ module farfield
         ds = dy
         x = (i-ic0)*dx
         nt = t/dt
-        do j=j0,j1-1
+        do j=jm12j0,jm12j1-1
             y = (j-jc0+0.5d0)*dy
             hyavg = 0.25d0*(hy(i,j)+hy(i-1,j)+hy(i,j+1)+hy(i-1,j+1))
             hzavg = 0.50d0*(hz(i,j)+hz(i-1,j))
@@ -229,7 +313,7 @@ module farfield
         ds = dy 
         x = (i-ic0)*dx
         nt = t/dt
-        do j=j0,j1-1
+        do j=jm12j0,jm12j1-1
             y = (j-jc0+0.5d0)*dy
             eyavg = ey(i,j)
             ezavg = 0.5d0*(ez(i,j)+ez(i,j+1))
@@ -240,7 +324,7 @@ module farfield
             uz(m) = uz(m) - (1.0d0-eta)*eyavg*ds
             uy(m+1)=uy(m+1) + eta*ezavg*ds 
             uz(m+1)=uz(m+1) - eta*eyavg*ds
-        enddo
+        enddo 
     end subroutine
 
     subroutine jsur3()
@@ -255,7 +339,7 @@ module farfield
         ds = dx 
         y = (j-jc0)*dy 
         nt = t/dt
-        do i=i0,i1-1
+        do i=im34i0,im34i1-1
             x = (i-ic0+0.5d0)*dx 
             hxavg = 0.25d0*(hx(i,j)+hx(i,j-1)+hx(i+1,j)+hx(i+1,j-1))
             hzavg = 0.50d0*(hz(i,j)+hz(i,j-1))
@@ -266,7 +350,7 @@ module farfield
             wx(m) = wx(m)-(1.0d0-eta)*hzavg*ds 
             wz(m+1)=wz(m+1)+eta*hxavg*ds 
             wx(m+1)=wx(m+1)-eta*hzavg*ds
-        enddo
+        enddo 
     end subroutine
 
     subroutine msur3()
@@ -282,7 +366,7 @@ module farfield
         ds = dx 
         y = (j-jc0)*dy
         nt = t/dt
-        do i=i0,i1-1
+        do i=im34i0,im34i1-1
             x = (i-ic0+0.5d0)*dx
             exavg = ex(i,j)
             ezavg = 0.5d0*(ez(i,j)+ez(i+1,j))
@@ -293,7 +377,7 @@ module farfield
             ux(m) = ux(m) + (1.0d0-eta)*ezavg*ds 
             uz(m+1) = uz(m+1) - eta*exavg*ds 
             ux(m+1) = ux(m+1) + eta*ezavg*ds 
-        enddo
+        enddo 
     end subroutine 
     
     subroutine jsur4()
@@ -307,8 +391,8 @@ module farfield
         j = j1 
         ds = dx 
         y = (j-jc0)*dy 
-        nt = t/dt 
-        do i=i0,i1-1 
+        nt = t/dt
+        do i=im34i0,im34i1-1 
             x = (i-ic0+0.5d0)*dx 
             hxavg = 0.25d0*(hx(i,j)+hx(i,j-1)+hx(i+1,j)+hx(i+1,j-1))
             hzavg = 0.5d0*(hz(i,j)+hz(i,j-1))
@@ -319,7 +403,7 @@ module farfield
             wx(m) = wx(m)+(1.0d0-eta)*hzavg*ds 
             wz(m+1)=wz(m+1)-eta*hxavg*ds
             wx(m+1)=wx(m+1)+eta*hzavg*ds 
-        enddo
+        enddo 
     end subroutine
 
     subroutine msur4()
@@ -335,7 +419,7 @@ module farfield
         ds = dx 
         y = (j-jc0)*dy
         nt = t/dt
-        do i=i0,i1-1
+        do i=im34i0,im34i1-1
             x = (i-ic0+0.5d0)*dx
             exavg = ex(i,j)
             ezavg = 0.5d0*(ez(i,j)+ez(i+1,j))
@@ -346,8 +430,19 @@ module farfield
             ux(m) = ux(m) - (1.0d0-eta)*ezavg*ds 
             uz(m+1) = uz(m+1) + eta*exavg*ds 
             ux(m+1) = ux(m+1) - eta*ezavg*ds 
-        enddo
-    end subroutine 
+        enddo 
+    end subroutine
+    
+    subroutine finalize_far()
+        deallocate(wx,wy,wz)
+        deallocate(ux,uy,uz)
+        if(myrank.eq.0) then
+            deallocate(rwx,rwy,rwz)
+            deallocate(rux,ruy,ruz)
+            deallocate(wzz,wphi,uzz,uphi)
+            deallocate(dphi,dzz)
+        endif
+    end subroutine
 
     integer function intf(x)
         use constants

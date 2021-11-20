@@ -8,32 +8,34 @@ contains
         implicit none
         integer :: i,j
         real :: x
-        write(30,'(a10,/)')"set pwave"
+        if(myrank.eq.0) then 
+            write(30,'(a10,/)')"set pwave"
+        endif
         t=0.0
-        do j=0,ny-1
-            do i=1,nx-1
+        do j=jstart,jend
+            do i=istart,iend
                 x = i*dx
                 ey(i,j) = amps(2)*gs_ez(x)
             enddo
         enddo
 
-        do j=1,ny-1
-            do i=1,nx-1
+        do j=jstart,jend
+            do i=istart,iend
                 x = i*dx
                 ez(i,j) = amps(3)*gs_ez(x)
             enddo
         enddo
 
         t=t+0.5*dt
-        do j=1,ny-1
-            do i=0,nx-1
+        do j=jstart,jend
+            do i=istart,iend
                 x = (i+0.5)*dx
                 hy(i,j) = -amps(3)*gs_ez(x)/z0
             enddo
         enddo
         
-        do j=0,ny-1
-            do i=1,nx-1
+        do j=jstart,jend
+            do i=istart,iend
                 x = (i+0.5)*dx
                 hz(i,j) = amps(2)*gs_ez(x)/z0
             enddo

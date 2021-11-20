@@ -1,4 +1,4 @@
-module tfsf_dgausian
+module tfsf_RCP
     use constants
     implicit none
     real(kind=8) :: dd,zbk
@@ -24,7 +24,7 @@ module tfsf_dgausian
     integer :: ie2(2),ie3(2),je2(2),je3(2)
     integer :: ih2(2),ih3(2),jh2(2),jh3(2)
     contains
-    subroutine init_ts_dgausian()
+    subroutine init_ts_RCP()
         use constants
         implicit none
         alpha = 16.0d0/tau0/tau0
@@ -184,14 +184,13 @@ module tfsf_dgausian
         dd = qx+qy 
         if(dd>dis) dis = dd
         if(myrank.eq.0) then
-            write(30,*)"dgausian"
             write(30,*)"vxphi:",vxphi,"vyphi",vyphi
             write(30,*)"qx:",qx/dx,"qy:",qy/dy
             write(30,*)"dis:",dis/dx
         endif
     end subroutine
 
-    subroutine e_add_dgausian()
+    subroutine e_add_RCPwave()
         use constants
         implicit none
         call ejbnd_u(ie0(1),ie1(1),ie2(1),ie3(1))
@@ -200,7 +199,7 @@ module tfsf_dgausian
         call eibnd_r(je0(2),je1(2),je2(2),je3(2))
     end subroutine
 
-    subroutine h_add_dgausian()
+    subroutine h_add_RCPwave()
         use constants
         implicit none
         call hjbnd_u(ih0(1),ih1(1),ih2(1),ih3(1))
@@ -217,16 +216,14 @@ module tfsf_dgausian
         j = jbd0
         !$omp parallel do
         do i=i0,i1
-            ez(i,j) = ez(i,j) + bezy(i,j)*hxinc_dgausian(i,j-1)
+            ez(i,j) = ez(i,j) + bezy(i,j)*hxinc_RCPwave(i,j-1)
         enddo
-        !$end parallel do 
-        
+        !$omp end parallel do
         !$omp parallel do
         do i=i2,i3
-            ex(i,j) = ex(i,j) - bexy(i,j)*hzinc_dgausian(i,j-1)
+            ex(i,j) = ex(i,j) - bexy(i,j)*hzinc_RCPwave(i,j-1)
         enddo
-        !$end parallel do 
-        
+        !$omp end parallel do
     end subroutine
 
     subroutine ejbnd_o(i0,i1,i2,i3)
@@ -237,16 +234,14 @@ module tfsf_dgausian
         j = jbd1
         !$omp parallel do
         do i=i0,i1
-            ez(i,j) = ez(i,j) - bezy(i,j)*hxinc_dgausian(i,j)
+            ez(i,j) = ez(i,j) - bezy(i,j)*hxinc_RCPwave(i,j)
         enddo
-        !$end parallel do 
-        
+        !$omp end parallel do
         !$omp parallel do
         do i=i2,i3
-            ex(i,j) = ex(i,j) + bexy(i,j)*hzinc_dgausian(i,j)
+            ex(i,j) = ex(i,j) + bexy(i,j)*hzinc_RCPwave(i,j)
         enddo
-        !$end parallel do 
-        
+        !$omp end parallel do
     end subroutine
 
     subroutine eibnd_l(j0,j1,j2,j3)
@@ -257,16 +252,14 @@ module tfsf_dgausian
         i = ibd0 
         !$omp parallel do
         do j=j0,j1
-            ez(i,j) = ez(i,j) - bezx(i,j)*hyinc_dgausian(i-1,j)
+            ez(i,j) = ez(i,j) - bezx(i,j)*hyinc_RCPwave(i-1,j)
         enddo
-        !$end parallel do 
-        
+        !$omp end parallel do
         !$omp parallel do
         do j=j2,j3
-            ey(i,j) = ey(i,j) + beyx(i,j)*hzinc_dgausian(i-1,j)
+            ey(i,j) = ey(i,j) + beyx(i,j)*hzinc_RCPwave(i-1,j)
         enddo
-        !$end parallel do 
-        
+        !$omp end parallel do
     end subroutine
 
     subroutine eibnd_r(j0,j1,j2,j3)
@@ -277,16 +270,14 @@ module tfsf_dgausian
         i = ibd1 
         !$omp parallel do
         do j=j0,j1
-            ez(i,j) = ez(i,j) + bezx(i,j)*hyinc_dgausian(i,j)
+            ez(i,j) = ez(i,j) + bezx(i,j)*hyinc_RCPwave(i,j)
         enddo
-        !$end parallel do 
-        
+        !$omp end parallel do
         !$omp parallel do
         do j=j2,j3
-            ey(i,j) = ey(i,j) - beyx(i,j)*hzinc_dgausian(i,j)
+            ey(i,j) = ey(i,j) - beyx(i,j)*hzinc_RCPwave(i,j)
         enddo
-        !$end parallel do 
-        
+        !$omp end parallel do
     end subroutine
 
     subroutine hjbnd_u(i0,i1,i2,i3)
@@ -297,16 +288,14 @@ module tfsf_dgausian
         j=jbd0-1
         !$omp parallel do
         do i=i0,i1
-            hx(i,j) = hx(i,j) + bmxy(i,j)*ezinc_dgausian(i,j+1)
+            hx(i,j) = hx(i,j) + bmxy(i,j)*ezinc_RCPwave(i,j+1)
         enddo
-        !$end parallel do 
-        
+        !$omp end parallel do
         !$omp parallel do
         do i=i2,i3
-            hz(i,j) = hz(i,j) - bmzy(i,j)*exinc_dgausian(i,j+1)
+            hz(i,j) = hz(i,j) - bmzy(i,j)*exinc_RCPwave(i,j+1)
         enddo
-        !$end parallel do 
-        
+        !$omp end parallel do
     end subroutine
 
     subroutine hjbnd_o(i0,i1,i2,i3)
@@ -317,16 +306,14 @@ module tfsf_dgausian
         j=jbd1
         !$omp parallel do
         do i=i0,i1
-            hx(i,j) = hx(i,j) - bmxy(i,j)*ezinc_dgausian(i,j)
+            hx(i,j) = hx(i,j) - bmxy(i,j)*ezinc_RCPwave(i,j)
         enddo
-        !$end parallel do 
-        
+        !$omp end parallel do
         !$omp parallel do
         do i=i2,i3
-            hz(i,j) = hz(i,j) + bmzy(i,j)*exinc_dgausian(i,j)
+            hz(i,j) = hz(i,j) + bmzy(i,j)*exinc_RCPwave(i,j)
         enddo
-        !$end parallel do 
-        
+        !$omp end parallel do
     end subroutine
     
     subroutine hibnd_l(j0,j1,j2,j3)
@@ -337,16 +324,14 @@ module tfsf_dgausian
         i=ibd0-1
         !$omp parallel do
         do j=j0,j1
-            hy(i,j) = hy(i,j) - bmyx(i,j)*ezinc_dgausian(i+1,j)
+            hy(i,j) = hy(i,j) - bmyx(i,j)*ezinc_RCPwave(i+1,j)
         enddo
-        !$end parallel do 
-        
+        !$omp end parallel do
         !$omp parallel do
         do j=j2,j3
-            hz(i,j) = hz(i,j) + bmzx(i,j)*eyinc_dgausian(i+1,j)
+            hz(i,j) = hz(i,j) + bmzx(i,j)*eyinc_RCPwave(i+1,j)
         enddo
-        !$end parallel do 
-        
+        !$omp end parallel do
     end subroutine
 
     subroutine hibnd_r(j0,j1,j2,j3)
@@ -357,16 +342,14 @@ module tfsf_dgausian
         i=ibd1
         !$omp parallel do
         do j=j0,j1
-            hy(i,j) = hy(i,j) + bmyx(i,j)*ezinc_dgausian(i,j)
+            hy(i,j) = hy(i,j) + bmyx(i,j)*ezinc_RCPwave(i,j)
         enddo
-        !$end parallel do 
-        
+        !$omp end parallel do
         !$omp parallel do
         do j=j2,j3
-            hz(i,j) = hz(i,j) - bmzx(i,j)*eyinc_dgausian(i,j)
+            hz(i,j) = hz(i,j) - bmzx(i,j)*eyinc_RCPwave(i,j)
         enddo
-        !$end parallel do 
-        
+        !$omp end parallel do
     end subroutine
     
     logical function ibndinout(ibnd)
@@ -436,103 +419,153 @@ module tfsf_dgausian
         endif
     end subroutine 
 
-    real(kind=8) function exinc_dgausian(i,j)
+    real(kind=8) function exinc_RCPwave(i,j)
         use constants
         implicit none
         integer,intent(in) :: i,j
         real(kind=8) :: x,y,eth,eph
         x = (i+0.5d0)*dx
         y = j*dy
-        eth = cogam*einc_dgausian(x,y)
-        eph = sigam*einc_dgausian(x,y)
-        exinc_dgausian = vxthe*eth+vxphi*eph
+        !eth = cogam*einc_RCPwave(x,y)
+        !eph = sigam*einc_RCPwave(x,y)
+        !exinc_RCPwave = vxthe*eth+vxphi*eph
+        exinc_RCPwave = 0.0d0
     end function
 
-    real(kind=8) function eyinc_dgausian(i,j)
+    real(kind=8) function eyinc_RCPwave(i,j)
         use constants
         implicit none
         integer,intent(in) :: i,j
         real(kind=8) :: x,y,eth,eph
         x = i*dx
         y = (j+0.5d0)*dy
-        eth = cogam*einc_dgausian(x,y)
-        eph = sigam*einc_dgausian(x,y)
-        eyinc_dgausian =vythe*eth+vyphi*eph
+        !eth = cogam*einc_RCPwave(x,y)
+        !eph = sigam*einc_RCPwave(x,y)
+        eyinc_RCPwave = vythe*eth+vyphi*eph
+        eyinc_RCPwave = vyphi*eyinc_RCP(x,y)
     end function
 
-    real(kind=8) function ezinc_dgausian(i,j)
+    real(kind=8) function ezinc_RCPwave(i,j)
         use constants
         implicit none
         integer,intent(in) :: i,j
         real(kind=8) :: x,y,eth
         x = i*dx
         y = j*dy
-        eth = cogam*einc_dgausian(x,y)
-        ezinc_dgausian = vzthe*eth
+        !eth = cogam*einc_RCPwave(x,y)
+        ezinc_RCPwave = vzthe*eth
+        ezinc_RCPwave = vyphi*ezinc_RCP(x,y)
     end function
 
-    real(kind=8) function hxinc_dgausian(i,j)
+    real(kind=8) function hxinc_RCPwave(i,j)
         use constants
         implicit none
         integer,intent(in) :: i,j
         real(kind=8) :: x,y,eth,eph
         x = i*dx
         y = (j+0.5d0)*dy
-        eth = cogam*hinc_dgausian(x,y)
-        eph = sigam*hinc_dgausian(x,y)
-        hxinc_dgausian = uxthe*eth+uxphi*eph
+        !eth = cogam*hinc_RCPwave(x,y)
+        !eph = sigam*hinc_RCPwave(x,y)
+        hxinc_RCPwave = uxthe*eth+uxphi*eph
+        hxinc_RCPwave = 0.0d0
     end function
 
-    real(kind=8) function hyinc_dgausian(i,j)
+    real(kind=8) function hyinc_RCPwave(i,j)
         use constants
         implicit none
         integer,intent(in) :: i,j
         real(kind=8) :: x,y,eth,eph
         x = (i+0.5d0)*dx
         y = j*dy
-        eth = cogam*hinc_dgausian(x,y)
-        eph = sigam*hinc_dgausian(x,y)
-        hyinc_dgausian = uythe*eth+uyphi*eph
+        !eth = cogam*hinc_RCPwave(x,y)
+        !eph = sigam*hinc_RCPwave(x,y)
+        hyinc_RCPwave = uythe*eth+uyphi*eph
+        hyinc_RCPwave = uzphi*hyinc_RCP(x,y)
     end function
 
-    real(kind=8) function hzinc_dgausian(i,j)
+    real(kind=8) function hzinc_RCPwave(i,j)
         use constants
         implicit none
         integer,intent(in) :: i,j
         real(kind=8) :: x,y,eph
         x = (i+0.5d0)*dx
         y = (j+0.5d0)*dy
-        eph = sigam*hinc_dgausian(x,y)
-        hzinc_dgausian = uzphi*eph
+        !eph = sigam*hinc_RCPwave(x,y)
+        hzinc_RCPwave = uzphi*eph
+        hzinc_RCPwave = uzphi*hzinc_RCP(x,y)
     end function
 
-
-    real(kind=8) function einc_dgausian(x,y)
+    real(kind=8) function eyinc_RCP(x,y)
         use constants
         implicit none
         real(kind=8) :: tau
         real(kind=8),intent(in) :: x,y
         tau = t+(r0x*x+r0y*y-dis)/vbk
-        einc_dgausian = dgausian(tau)
+        eyinc_RCP = RCPwave1(tau)
     end function
 
-    real(kind=8) function hinc_dgausian(x,y)
+    real(kind=8) function hyinc_RCP(x,y)
         use constants
         implicit none
         real(kind=8) :: tau
         real(kind=8),intent(in) :: x,y
         tau = t+(r0x*x+r0y*y-dis)/vbk
-        hinc_dgausian = dgausian(tau)
+        hyinc_RCP = RCPwave2(tau)
     end function
 
-    real(kind=8) function dgausian(tau)
+    real(kind=8) function ezinc_RCP(x,y)
         use constants
         implicit none
-        real(kind=8) :: tt,tt2
+        real(kind=8) :: tau
+        real(kind=8),intent(in) :: x,y
+        tau = t+(r0x*x+r0y*y-dis)/vbk
+        ezinc_RCP =-RCPwave2(tau)
+    end function
+
+    real(kind=8) function hzinc_RCP(x,y)
+        use constants
+        implicit none
+        real(kind=8) :: tau
+        real(kind=8),intent(in) :: x,y
+        tau = t+(r0x*x+r0y*y-dis)/vbk
+        hzinc_RCP = RCPwave1(tau)
+    end function
+
+
+    real(kind=8) function RCPwave1(tau)
+        use constants
+        implicit none
         real(kind=8),intent(in) :: tau
-        tt = tau-tau0
-        tt2 = tt*tt
-        dgausian = amp*(-tt/tau0)*exp(-tt2*alpha)
-    end function dgausian
+        real(kind=8) :: w,tt
+        tt  = tau-tau0
+        tt  = tt+1.95d0*pai/omega
+        if(tt<2.0d0*pai/omega) then
+            w = 0.0d0
+        else if(tt>=2.0d0*pai/omega.and.tt<=3.0d0*pai/omega) then
+            w = 0.5d0*(1.0d0-cos(omega*tt))
+        else 
+            w = 1.0d0
+        endif
+        RCPwave1 = amp*w*sin(omega*tt)
+    end function RCPwave1
+
+    real(kind=8) function RCPwave2(tau)
+        use constants
+        implicit none
+        real(kind=8),intent(in) :: tau
+        real(kind=8) :: w,tt
+        tt  = tau-tau0
+        tt  = tt+1.95d0*pai/omega
+        if(tt<3.5d0*pai/omega) then
+            w = 0.0d0
+        else if(tt>=3.5d0*pai/omega.and.tt<=3.5d0*pai/omega) then
+            w = 0.5d0*(1.0d0-cos(omega*tt+pai/2.0d0))
+        else 
+            w = 1.0d0
+        endif
+        RCPwave2 = amp*w*sin(omega*tt+pai/2.0d0)
+    end function RCPwave2
+
+    
 
 end module

@@ -1,0 +1,75 @@
+&space
+    nxx = 2000
+    nyy = 2000
+    dx = 0.0001
+    dy = 0.0001
+    pbc= 0
+    abc = 1
+    lpml = 8, 8
+/
+
+&time
+    deltat = 0.5
+    nstep = 8000
+/
+
+&output
+    out = 100
+    ostart = 0
+    odom = 0, 2000, 0, 2000
+    stride = 1
+    comp = 0,1,0,0,0,1,0,0,0
+    io = 600
+    jo = 1508
+/
+
+&scatt
+    mode = 0
+    lx = 200
+    ly = 200
+    gamma0 = -90.0
+    theta0 = 90.0
+    phi0 = 180.0
+    amp = 1.0
+    freq = 3000000000.0
+    tau0 = 5e-11
+/
+
+&far
+    isx = 5
+    isy = 5
+    theta1 = 90.0
+    phi1 = 180.0
+/
+
+&object
+    obj = 1
+    med = 2
+    lx2 = 0
+    ly2 = 0
+    epsr = 0.0
+    radius = 150.0
+/
+
+&wave
+    kwave=0
+    amps=0.0,1.0,0.0
+    orgs=750.0,0.0,0.0
+    ang=90.0,0.0,0.0
+    pt = 5.0
+    pw = 30.0
+/
+
+&plasma
+    pls = 0
+    prad = 200.0
+    erad = 205.0
+    nu = 5000000000.0
+    wp = 15.07d9
+    wc = 0.0d0,0.0d0,15.0d9
+/
+
+&mpip
+   prx=4
+   pry=4
+/

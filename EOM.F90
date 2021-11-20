@@ -4,21 +4,16 @@ subroutine EOM()
     use hdfio
     implicit none
     integer :: i,j
-    integer :: is,ie,js,je
     real(kind=8) cy_rad
 
-    is = int(nx*0.5d0)-int(prad*1.1)
-    ie = int(nx*0.5d0)+int(prad*1.1)
-    js = int(ny*0.5d0)-int(prad*1.1)
-    je = int(ny*0.5d0)+int(prad*1.1)
-    dims(1) = ie-is+1
-    dims(2) = je-js+1
+    if(myrank.eq.0) then
+        write(30,'(a12)')"uniform EOM"
+        write(30,'(a8,e10.3)')"omegap:",wp 
+        write(30,'(a16,e10.3)')"collision freq:",nu
+        write(30,'(a21,f10.2,/)')"thickness of plasma:",prad-radius
+    endif
     
-    write(30,'(a8,e10.3)')"omegap:",wp 
-    write(30,'(a16,e10.3)')"collision freq:",nu
-    write(30,'(a21,f10.2,/)')"thickness of plasma:",prad-radius
-    
-    ajj = dt/eps0 
+    ajj = dt/eps0
 
     omat = dt/2.0d0*omat
     sa = adding_mat(imat(:,:),omat(:,:))
@@ -28,9 +23,8 @@ subroutine EOM()
 
     sab = matmul(sa,sb)
     tc = qe*dt/mel*sa
-
-    do j=0,ny
-        do i=0,nx
+    do j=jstart,jend
+        do i=istart,iend
             if(cy_rad(i,j).le.prad.and.cy_rad(i+1,j).le.prad) then
                 if(cy_rad(i,j).ge.radius.and.cy_rad(i+1,j).ge.radius) then
                     avx(i,j)  = (2.0d0-nu*dt)/(2.0d0+nu*dt)
@@ -52,33 +46,64 @@ subroutine EOM()
         enddo
     enddo
 
-    open(31,file="wp.txt")
-    do j=0,ny
-        do i=0,nx
+    do j=jstart,jend
+        do i=istart,iend
             if(cy_rad(i,j).le.prad) then
                 if(cy_rad(i,j).ge.radius) then
                     nd(i,j) = mel*eps0*(wp**2.0d0)/(qe**2.0d0)
-                    if(j.eq.int(ny/2)) then
-                        write(31,*)wp
-                    endif
                 else
                     nd(i,j) = 0.0d0
-                    if(j.eq.int(ny/2)) then
-                        write(31,*) 0.0d0
-                    endif 
                 endif
             else 
                 nd(i,j) = 0.0d0
-                if(j.eq.int(ny/2)) then
-                    write(31,*) 0.0d0
-                endif
             endif
         enddo
     enddo
-    close(31)
 
-    write(30,'(a15)')"output density"
-    call hdfopen(filename(10),groupname(10),file_id(10),group_id(10),0)
-    call wrt2d(file_id(10),group_id(10),"0000",dims,nd(is:ie,js:je),istat1(10),istat2(10))
-    call hdfclose(file_id(10),group_id(10),error(10))
+    contains 
+
+    function adding_mat(x,y) result(ans)
+        use constants
+        implicit none 
+        integer :: i,j
+        real(kind=8),intent(in) :: x(3,3),y(3,3)
+        real(kind=8) :: ans(3,3)
+        
+        do i=1,3
+            do j=1,3
+                ans(i,j) = x(i,j) + y(i,j)
+            enddo
+        enddo
+        
+    end function 
+
+    subroutine show_mat(x)
+        use constants 
+        implicit none 
+        integer :: i,j 
+        real(kind=8),intent(in) :: x(3,3)
+        real(kind=8) :: y(3,3)
+        do i = 1,3
+            write(30,*),x(i,1),x(i,2),x(i,3)
+        enddo
+        write(30,*)""
+    end subroutine
+
+
+    function inversing_mat(x) result(ans)
+        use constants
+        implicit none
+        integer :: n,lwork,ifail,infom
+        integer :: ipiv(3),work(192)
+        integer :: i,j
+        real(kind=8) :: ans(3,3),tmp(3,3)
+        real(kind=8),intent(inout) :: x(3,3)
+        n = 3
+        lwork = n*64
+        tmp = x
+        call dgetrf(n,n,x,n,ipiv,infom)
+        call dgetri(n,x,n,ipiv,work,lwork,infom)
+        tmp = matmul(tmp,x)
+        ans = x
+    end function
 end subroutine EOM

@@ -6,12 +6,14 @@ subroutine PEC()
     implicit none
     integer :: i,j
     real(kind=8) cy_rad
-    write(30,'(a20,f8.1,a3,f8.1)')"object location ic:",ic," jc:",jc
-    if(obj==1) then
-          write(30,'(a21)')"object type:cylinder"
-          write(30,'(a12,f10.2,/)')"PEC radius:",radius
-          do j=0,ny
-              do i=0,nx
+    if(obj.eq.1) then
+            if(myrank.eq.0) then
+                write(30,*)"ic:",ic,"jc:",jc
+                write(30,'(a21)')"object type:cylinder"
+                write(30,'(a12,f10.2,/)')"PEC radius:",radius
+            endif
+          do j=jstart,jend
+              do i=istart,iend
                   if(cy_rad(i,j).le.radius.and.cy_rad(i+1,j).le.radius) then
                       aex(i,j)  =  0.0d0
                       bexy(i,j) =  0.0d0

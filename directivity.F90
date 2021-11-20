@@ -2,6 +2,7 @@ module directivity
     use constants
     implicit none
     integer :: i0,i1,j0,j1 !積分線の位置
+    integer :: emi0,emi1,emj0,emj1
     real(kind=8) :: ic0,jc0 !積分線の中心
 
     integer,parameter :: np=73
@@ -14,6 +15,8 @@ module directivity
     complex(kind=8),allocatable :: ux(:),uy(:),uz(:),uzz(:)
     complex(kind=8),allocatable :: wphi(:),uphi(:)
     complex(kind=8),allocatable :: dphi(:),dz(:)
+    complex(kind=8),allocatable :: pwx(:),pwy(:),pwz(:)
+    complex(kind=8),allocatable :: pux(:),puy(:),puz(:)
     
     integer :: itgstr,itgend,nintg,ndt
     real(kind=8) :: ak0,tintg,wi
@@ -24,16 +27,12 @@ module directivity
     subroutine init_dir()
         use constants
         implicit none
-        integer ::test
         integer :: p
-        write(30,'(a16)')"set directivity"
-        allocate(hatx(np),haty(np),hatz(np))
-        allocate(px(np),py(np),pz(np))
-        allocate(sx(np),sy(np),sz(np))
-        allocate(wx(np),wy(np),wz(np),wzz(np))
-        allocate(ux(np),uy(np),uz(np),uzz(np))
-        allocate(wphi(np),uphi(np),dphi(np),dz(np))
-        allocate(D(np))
+        allocate(hatx(1:np),haty(1:np),hatz(1:np))
+        allocate(px(1:np),py(1:np),pz(1:np))
+        allocate(sx(1:np),sy(1:np),sz(1:np))
+        allocate(wx(1:np),wy(1:np),wz(1:np))
+        allocate(ux(1:np),uy(1:np),uz(1:np))
 
         wx = (0.0d0,0.0d0)
         wy = (0.0d0,0.0d0)
@@ -52,12 +51,46 @@ module directivity
         !閉曲線の中心
         ic0 = (i0+i1)*0.5d0
         jc0 = (j0+j1)*0.5d0
-        allocate(js1(j0:j1,4),js2(j0:j1,4))
-        allocate(js3(i0:i1,4),js4(i0:i1,4))
+
+        emj0 = jstart 
+        emj1 = jend 
+        if((coords(1).eq.0.or.coords(1).eq.ndims(1)-1).and.coords(2).eq.0) then
+            emj0 = j0
+        endif
+        if((coords(1).eq.0.or.coords(1).eq.ndims(1)-1).and.coords(2).eq.ndims(2)-1) then
+            emj1 = j1 
+        endif  
+
+        emi0 = istart 
+        emi1 = iend 
+        if((coords(2).eq.0.or.coords(2).eq.ndims(2)-1).and.coords(1).eq.0) then
+            emi0 = i0
+        endif
+        if((coords(2).eq.0.or.coords(2).eq.ndims(2)-1).and.coords(1).eq.ndims(1)-1) then
+            emi1 = i1 
+        endif  
+
+        allocate(js1(emj0:emj1,4),js2(emj0:emj1,4))
+        allocate(js3(emi0:emi1,4),js4(emi0:emi1,4))
         js1 = (0.0d0,0.0d0)
         js2 = (0.0d0,0.0d0)
         js3 = (0.0d0,0.0d0)
         js4 = (0.0d0,0.0d0)
+
+        if(myrank.eq.0) then
+            allocate(pwx(1:np),pwy(1:np),pwz(1:np))
+            allocate(pux(1:np),puy(1:np),puz(1:np))
+            allocate(wzz(1:np),uzz(1:np))
+            allocate(wphi(1:np),uphi(1:np),dphi(1:np),dz(1:np))
+            allocate(D(1:np))
+            pwx = (0.0d0,0.0d0)
+            pwy = (0.0d0,0.0d0)
+            pwz = (0.0d0,0.0d0)
+            pux = (0.0d0,0.0d0)
+            puy = (0.0d0,0.0d0)
+            puz = (0.0d0,0.0d0)
+            
+        endif
 
         !角度のラジアン変換
         theta1 = 90.0d0
@@ -92,37 +125,57 @@ module directivity
         itgstr = nstep-ndt
         !積分終了
         itgend = nstep
-        write(30,'(a4,e10.3)')"k0:",ak0
-        write(30,'(a8,i5)')"itgstr:",itgstr
-        write(30,'(a8,i5)')"itgend:",itgend
-        write(30,'(a7,e10.3,/)')"omega:",omega
         
+        if(myrank.eq.0) then
+            write(30,'(a16)')"set directivity"
+            write(30,'(a4,e10.3)')"k0:",ak0
+            write(30,'(a8,i5)')"itgstr:",itgstr
+            write(30,'(a8,i5)')"itgend:",itgend
+            write(30,'(a7,e10.3,/)')"omega:",omega
+        endif
     end subroutine
             
     subroutine out_dir()
         use HDF5
+        use MPI
         use hdfio
         use constants
         implicit none
         integer :: p
         integer(kind=HSIZE_T),parameter :: dim3(1) = np
-        call sur1f
-        call sur2f 
-        call sur3f 
-        call sur4f
-        do p=1,np
-            wzz(p)  = wx(p)*sx(p)+wy(p)*sy(p)+wz(p)*sz(p)
-            wphi(p) = wx(p)*px(p)+wy(p)*py(p)+wz(p)*pz(p)
-            uzz(p)  = ux(p)*sx(p)+uy(p)*sy(p)+uz(p)*sz(p)
-            uphi(p) = ux(p)*px(p)+uy(p)*py(p)+uz(p)*pz(p)
-            dphi(p) =-z0*wphi(p)+uzz(p)
-            dz(p)   =-z0*wzz(p)-uphi(p)
-            D(p) = cdabs(dphi(p))**2+cdabs(dz(p))**2
-        enddo
-
-        call hdfopen(filename(17),datasetname(7),file_id(17),group_id(17),0)
-        call wrt1d(file_id(17),group_id(17),datasetname(7),dim3,D(:),istat1(17),istat2(17))
-        call hdfclose(file_id(17),group_id(17),error(17))
+        if(coords(1).eq.0) then
+            call sur1f
+        endif
+        if(coords(1).eq.ndims(1)-1) then
+            call sur2f
+        endif 
+        if(coords(2).eq.0) then
+            call sur3f
+        endif
+        if(coords(2).eq.ndims(2)-1) then 
+            call sur4f
+        endif
+        call mpi_reduce(wx(1),pwx(1),np,MPI_DOUBLE_COMPLEX,MPI_SUM,0,comm2d,mpierr)
+        call mpi_reduce(wy(1),pwy(1),np,MPI_DOUBLE_COMPLEX,MPI_SUM,0,comm2d,mpierr)
+        call mpi_reduce(wz(1),pwz(1),np,MPI_DOUBLE_COMPLEX,MPI_SUM,0,comm2d,mpierr)
+        call mpi_reduce(ux(1),pux(1),np,MPI_DOUBLE_COMPLEX,MPI_SUM,0,comm2d,mpierr)
+        call mpi_reduce(uy(1),puy(1),np,MPI_DOUBLE_COMPLEX,MPI_SUM,0,comm2d,mpierr)
+        call mpi_reduce(uz(1),puz(1),np,MPI_DOUBLE_COMPLEX,MPI_SUM,0,comm2d,mpierr)
+        call mpi_barrier(comm2d,mpierr)
+        if(myrank.eq.0) then 
+            do p=1,np
+                wzz(p)  = pwx(p)*sx(p)+pwy(p)*sy(p)+pwz(p)*sz(p)
+                wphi(p) = pwx(p)*px(p)+pwy(p)*py(p)+pwz(p)*pz(p)
+                uzz(p)  = pux(p)*sx(p)+puy(p)*sy(p)+puz(p)*sz(p)
+                uphi(p) = pux(p)*px(p)+puy(p)*py(p)+puz(p)*pz(p)
+                dphi(p) =-z0*wphi(p)+uzz(p)
+                dz(p)   =-z0*wzz(p)-uphi(p)
+                D(p) = cdabs(dphi(p))**2+cdabs(dz(p))**2
+            enddo
+            call hdfopen(filename(17),datasetname(7),file_id(17),group_id(17),0)
+            call wrt1d(file_id(17),group_id(17),datasetname(7),dim3,D(:),istat1(17),istat2(17))
+            call hdfclose(file_id(17),group_id(17),error(17))
+        endif
     end subroutine 
 
     !i=i0面の遠方界
@@ -138,7 +191,7 @@ module directivity
         dl = dy 
         x = (i-ic0)*dx
         do p=1,np
-            do j=j0,j1-1
+            do j=emj0,emj1-1
                 y=(j-jc0+0.5d0)*dy
                 rr = hatx(p)*x+haty(p)*y
                 ss = cdexp(cj*ak0*rr)*dl
@@ -163,7 +216,7 @@ module directivity
         dl = dy 
         x = (i-ic0)*dx
         do p=1,np
-            do j=j0,j1-1
+            do j=emj0,emj1-1
                 y=(j-jc0+0.5d0)*dy
                 rr = hatx(p)*x+haty(p)*y
                 ss = cdexp(cj*ak0*rr)*dl
@@ -188,7 +241,7 @@ module directivity
         dl = dx 
         y = (j-jc0)*dy
         do p=1,np
-            do i=i0,i1-1
+            do i=emi0,emi1-1
                 x=(i-ic0+0.5d0)*dx
                 rr = hatx(p)*x+haty(p)*y
                 ss = cdexp(cj*ak0*rr)*dl
@@ -213,7 +266,7 @@ module directivity
         dl = dx
         y = (j-jc0)*dy
         do p=1,np
-            do i=i0,i1-1
+            do i=emi0,emi1-1
                 x=(i-ic0+0.5d0)*dx
                 rr = hatx(p)*x+haty(p)*y
                 ss = cdexp(cj*ak0*rr)*dl
@@ -237,10 +290,22 @@ module directivity
             else
                 cofh = 4.0d0*wi*cexph
             endif
-            call sur1h
-            call sur2h
-            call sur3h
-            call sur4h
+            if(coords(1).eq.0) then
+                call exchg2dj(hy(istart-1:iend+1,jstart-1:jend+1),lx0)
+                call sur1h
+            endif
+            if(coords(1).eq.ndims(1)-1) then
+                call exchg2dj(hy(istart-1:iend+1,jstart-1:jend+1),lx0)
+                call sur2h
+            endif
+            if(coords(2).eq.0) then
+                call exchg2di(hx(istart-1:iend+1,jstart-1:jend+1))
+                call sur3h
+            endif
+            if(coords(2).eq.ndims(1)-1) then
+                call exchg2di(hx(istart-1:iend+1,jstart-1:jend+1))
+                call sur4h
+            endif
         endif
     end subroutine
 
@@ -256,10 +321,22 @@ module directivity
             else
                 cofe = 4.0d0*wi*cexpe
             endif
-            call sur1e
-            call sur2e
-            call sur3e
-            call sur4e
+            if(coords(1).eq.0) then
+                call exchg2dj(ez(istart-1:iend+1,jstart-1:jend+1),lx0)
+                call sur1e
+            endif
+            if(coords(1).eq.ndims(1)-1) then
+                call exchg2dj(ez(istart-1:iend+1,jstart-1:jend+1),lx0)
+                call sur2e
+            endif
+            if(coords(2).eq.0) then
+                call exchg2di(ez(istart-1:iend+1,jstart-1:jend+1))
+                call sur3e
+            endif
+            if(coords(2).eq.ndims(1)-1) then
+                call exchg2di(ez(istart-1:iend+1,jstart-1:jend+1))
+                call sur4e
+            endif
         endif
     end subroutine
 
@@ -270,7 +347,7 @@ module directivity
         integer :: i,j
         real(kind=8) :: eys,ezs
         i=i0
-        do j=j0,j1-1
+        do j=emj0,emj1-1
             eys = ey(i,j)
             ezs = 0.5d0*(ez(i,j)+ez(i,j+1))
             js1(j,1) = js1(j,1)+eys*cofe
@@ -285,7 +362,7 @@ module directivity
         integer :: i,j
         real(kind=8) :: eys,ezs
         i=i1
-        do j=j0,j1-1
+        do j=emj0,emj1-1
             eys = ey(i,j)
             ezs = 0.5d0*(ez(i,j)+ez(i,j+1))
             js2(j,1) = js2(j,1)+eys*cofe
@@ -300,7 +377,7 @@ module directivity
         integer :: i,j
         real(kind=8) :: exs,ezs
         j=j0
-        do i=i0,i1-1
+        do i=emi0,emi1-1
             exs = ex(i,j)
             ezs = 0.5d0*(ez(i,j)+ez(i+1,j))
             js3(i,1) = js3(i,1)+exs*cofe
@@ -315,7 +392,7 @@ module directivity
         integer :: i,j
         real(kind=8) :: exs,ezs
         j=j1
-        do i=i0,i1-1
+        do i=emi0,emi1-1
             exs = ex(i,j)
             ezs = 0.5d0*(ez(i,j)+ez(i+1,j))
             js4(i,1) = js4(i,1)+exs*cofe
@@ -330,7 +407,7 @@ module directivity
         integer :: i,j
         real(kind=8) :: hys,hzs
         i=i0
-        do j=j0,j1-1
+        do j=emj0,emj1-1
             hys = 0.25d0*(hy(i,j)+hy(i-1,j)+hy(i,j+1)+hy(i-1,j+1))
             hzs = 0.50d0*(hz(i,j)+hz(i-1,j))
             js1(j,3) = js1(j,3)+hys*cofh
@@ -345,7 +422,7 @@ module directivity
         integer :: i,j
         real(kind=8) :: hys,hzs
         i=i1
-        do j=j0,j1-1
+        do j=emj0,emj1-1
             hys = 0.25d0*(hy(i,j)+hy(i-1,j)+hy(i,j+1)+hy(i-1,j+1))
             hzs = 0.50d0*(hz(i,j)+hz(i-1,j))
             js2(j,3) = js2(j,3)+hys*cofh
@@ -360,7 +437,7 @@ module directivity
         integer :: i,j
         real(kind=8) :: hxs,hzs
         j=j0
-        do i=i0,i1-1
+        do i=emi0,emi1-1
             hxs = 0.25d0*(hx(i,j)+hx(i,j-1)+hx(i+1,j)+hx(i+1,j-1))
             hzs = 0.50d0*(hz(i,j)+hz(i,j-1))
             js3(i,3) = js3(i,3)+hxs*cofh
@@ -375,13 +452,28 @@ module directivity
         integer :: i,j
         real(kind=8) :: hxs,hzs
         j=j1
-        do i=i0,i1-1
+        do i=emi0,emi1-1
             hxs = 0.25d0*(hx(i,j)+hx(i,j-1)+hx(i+1,j)+hx(i+1,j-1))
             hzs = 0.50d0*(hz(i,j)+hz(i,j-1))
             js4(i,3) = js4(i,3)+hxs*cofh
             js4(i,4) = js4(i,4)+hzs*cofh
         enddo
     end subroutine
+
+    subroutine finalize_dir()
+        deallocate(hatx,haty,hatz)
+        deallocate(px,py,pz)
+        deallocate(sx,sy,sz)
+        deallocate(wx,wy,wz)
+        deallocate(ux,uy,uz)
+        deallocate(js1,js2,js3,js4)
+        if(myrank.eq.0) then
+            deallocate(pwx,pwy,pwz)
+            deallocate(pux,puy,puz)
+            deallocate(wzz,uzz)
+            deallocate(wphi,uphi,dphi,dz,D)
+        endif
+    end subroutine 
 end module
 
     

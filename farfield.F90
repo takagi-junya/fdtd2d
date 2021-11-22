@@ -96,9 +96,9 @@ module farfield
 
         if(myrank.eq.0) then
             write(30,'(a13)')"set farfield"
-            write(30,'(a17,i7.7,a5,i5.6)')"Far field start:",ms,"end:",me
+            write(30,'(a17,I6.6,a5,I6.6)')"Far field start:",ms,"end:",me
             write(30,'(a26,f10.2,a5,f10.2)')"Observation  angle theta:",theta1,"phi:",phi1
-            write(30,'(a5,i5,a5,i5)')"ic0:",ic0,"jc0:",jc0
+            write(30,'(a5,I6.5,a5,I6.5)')"ic0:",ic0,"jc0:",jc0
         endif
     end subroutine
 

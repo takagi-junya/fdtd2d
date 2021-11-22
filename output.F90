@@ -21,7 +21,7 @@ module output
          write(30,*)"jo:",jo 
       endif
       outputrank0 = 0
-      if((io.ge.istart.and.io.le.iend).and.(jo.ge.jstart.and.jo.le.jend)) then 
+      if((io.ge.istart.and.io.le.iend).and.(jo.ge.jstart.and.jo.le.jend).and.(of.eq.1)) then 
          outputrank0 = myrank
          write(*,*)"outputrank:",outputrank0
          open(35,file="ex.txt")
@@ -65,7 +65,7 @@ module output
       use hdfio 
       use mpi 
       integer,intent(in) :: n
-      if(myrank.eq.outputrank) then 
+      if((myrank.eq.outputrank).and.(of.eq.1)) then 
          write(35,*)ex(io,jo)
          write(36,*)ey(io,jo)
          write(37,*)ez(io,jo)
@@ -138,7 +138,7 @@ module output
       if(comp(9).eq.1) then
          call h5pclose(file_id(9),group_id(9),plist_id(8),istat1(9))
       endif
-      if(myrank.eq.outputrank) then
+      if((myrank.eq.outputrank).and.(of.eq.1)) then
          write(*,*)"close file"
          close(35)
          close(36)

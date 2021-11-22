@@ -532,7 +532,7 @@ module tfsf_dgausian
         real(kind=8),intent(in) :: tau
         tt = tau-tau0
         tt2 = tt*tt
-        dgausian = amp*(-tt/tau0)*exp(-tt2*alpha)
+        dgausian = amp*sqrt(2.0d0*alpha)*exp(0.5d0)*(-tt)*exp(-tt2*alpha)
     end function dgausian
 
 end module

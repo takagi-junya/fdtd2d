@@ -5,7 +5,6 @@ program fdtd2d
     use output
     use hdfio
     use pml2d
-    use pwave
     use tfsf_gausian
     use tfsf_dgausian
     use tfsf_sin
@@ -58,7 +57,7 @@ program fdtd2d
     do step=1,nstep+1
 
         if(myrank.eq.0) then
-            write(*,'(a10,I5.5)')"Time step:",step-1
+            write(*,'(a10,I6.5)')"Time step:",step-1
         endif
 
         call efield()

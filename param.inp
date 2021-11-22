@@ -3,7 +3,6 @@
     nyy = 2000
     dx = 0.0001
     dy = 0.0001
-    pbc= 0
     abc = 1
     lpml = 8, 8
 /
@@ -16,23 +15,12 @@
 &output
     out = 100
     ostart = 0
-    odom = 0, 2000, 0, 2000
+    oend = 8000
     stride = 1
     comp = 0,1,0,0,0,1,0,0,0
+    of = 0
     io = 600
     jo = 1508
-/
-
-&scatt
-    mode = 0
-    lx = 200
-    ly = 200
-    gamma0 = -90.0
-    theta0 = 90.0
-    phi0 = 180.0
-    amp = 1.0
-    freq = 3000000000.0
-    tau0 = 5e-11
 /
 
 &far
@@ -52,12 +40,15 @@
 /
 
 &wave
-    kwave=0
-    amps=0.0,1.0,0.0
-    orgs=750.0,0.0,0.0
-    ang=90.0,0.0,0.0
-    pt = 5.0
-    pw = 30.0
+    mode = 0
+    lx = 200
+    ly = 200
+    gamma0 = -90.0
+    theta0 = 90.0
+    phi0 = 180.0
+    amp = 1.0
+    freq = 3.0d9
+    tau0 = 5e-11
 /
 
 &plasma

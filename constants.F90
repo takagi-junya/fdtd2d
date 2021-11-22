@@ -5,7 +5,7 @@ module constants
    !/space/
    integer :: nxx,nyy           
    real(kind=8) :: dx,dy   
-   integer :: pbc              
+   !integer :: pbc              
    integer :: abc
    integer :: lpml(2)
 
@@ -18,18 +18,11 @@ module constants
    !/output/
    integer :: out                      
    integer :: ostart,oend
-   integer :: odom(4)
+   !integer :: odom(4)
    integer :: stride                
    integer :: comp(9)              
-   integer :: io,jo             
+   integer :: of,io,jo             
                 
-   !/scat/
-   integer :: mode
-   integer :: wshape       
-   integer ::lx,ly              
-   real(kind=8) :: gamma0,theta0,phi0,amp
-   real(kind=8) :: lambda,tau0,freq,omega
-
    !/far/
    integer :: isx,isy
    real(kind=8) :: theta1,phi1
@@ -42,7 +35,11 @@ module constants
    real(kind=8) :: epsr,radius                 
    
    !/wave/
-   integer :: kwave
+   integer :: mode
+   integer :: wshape       
+   integer ::lx,ly              
+   real(kind=8) :: gamma0,theta0,phi0,amp
+   real(kind=8) :: lambda,tau0,freq,omega
    real(kind=8) :: tau
    real(kind=8) :: amps(3)
    real(kind=8) :: orgs(3)

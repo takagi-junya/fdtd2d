@@ -9,15 +9,15 @@ subroutine setup()
     stride = 1
     ostart=0
     erad = 0.0
-    odom = (/0,0,0,0/)
+    !odom = (/0,0,0,0/)
 
-    namelist /space/nxx,nyy,dx,dy,pbc,abc,lpml
+    namelist /space/nxx,nyy,dx,dy,abc,lpml!,pbc
     namelist /time/deltat,nstep
-    namelist /output/out,ostart,oend,odom,stride,comp,io,jo
-    namelist /scatt/mode,wshape,lx,ly,gamma0,theta0,phi0,amp,freq,tau0!lambda,tau0
+    namelist /output/out,ostart,oend,stride,comp,of,of,io,jo!,odom
     namelist /far/isx,isy,theta1,phi1
     namelist /object/obj,med,ic,jc,lx2,ly2,epsr,radius
-    namelist /wave/kwave,amps,orgs,ang,pt,pw
+    !namelist /wave/amps,orgs,ang,pw,pt
+    namelist /wave/mode,wshape,lx,ly,gamma0,theta0,phi0,amp,freq,tau0
     namelist /plasma/pls,prad,erad,nu,wp,wc
     namelist /mpip/prx,pry
 
@@ -25,7 +25,6 @@ subroutine setup()
     read(10,nml=space)
     read(10,nml=time)
     read(10,nml=output)
-    read(10,nml=scatt)
     read(10,nml=far)
     read(10,nml=object)
     read(10,nml=wave)    
@@ -40,17 +39,16 @@ subroutine setup()
     theta0 = dble(theta0)
     phi0 = dble(phi0)
     amp = dble(amp)
-    !lambda = dble(lambda)*dx
     freq = dble(freq)
     tau0=dble(tau0)
     theta1=dble(theta1)
     phi1=dble(phi1)
     epsr = dble(epsr)
     radius = dble(radius)
-    orgs = dble(orgs)
-    ang  = dble(ang)
-    pw = dble(pw)
-    pt = dble(pt)
+    !orgs = dble(orgs)
+    !ang  = dble(ang)
+    !pw = dble(pw)
+    !pt = dble(pt)
     prad = dble(prad)
     erad = dble(erad)
     nu = dble(nu)
@@ -64,10 +62,38 @@ subroutine setup()
         nx = nxx
         ny = nyy
     else
-        nx = nxx+2*lpml(1)
-        ny = nyy+2*lpml(2)
+        nx = nxx!+2*lpml(1)
+        ny = nyy!+2*lpml(2)
     endif
 
+    if(mod(nx,prx).ne.0) then 
+        if(myrank.eq.0) then
+            write(*,*)"nx mod(prx) not equal to 0"
+        endif
+        stop
+    endif
+
+    if(mod(ny,pry).ne.0) then 
+        if(myrank.eq.0) then
+            write(*,*)"ny mod(pry) not equal to 0"
+        endif
+        stop
+    endif
+
+    if(mod(int(nx/prx),stride).ne.0) then 
+        if(myrank.eq.0) then
+            write(*,*)"nx/prx mod(stride) not equal to 0"
+        endif
+        stop
+    endif
+
+    if(mod(int(ny/pry),stride).ne.0) then 
+        if(myrank.eq.0) then
+            write(*,*)"ny/pry mod(strid) not equal to 0"
+        endif
+        stop   
+    endif
+    
     ndims(1) = prx
     ndims(2) = pry
 
@@ -85,13 +111,13 @@ subroutine setup()
     ly1 = jend-jstart+1
     lx0 = iend-istart+1
 
-    if(pbc.eq.1) then 
-        call mpi_cart_create(comm,ndim,ndims,pisperiodic,reorder,pcomm,mpierr)
-        call mpi_cart_shift(pcomm,0,1,pwest,peast,mpierr)
-        call mpi_cart_shift(pcomm,1,1,psouth,pnorth,mpierr)
-        allocate(tmpyd(istart:iend),tmpyu(istart:iend))
-        allocate(tmpyl(jstart:jend),tmpyr(jstart:jend))
-    endif
+    !if(pbc.eq.1) then 
+    !    call mpi_cart_create(comm,ndim,ndims,pisperiodic,reorder,pcomm,mpierr)
+    !    call mpi_cart_shift(pcomm,0,1,pwest,peast,mpierr)
+    !    call mpi_cart_shift(pcomm,1,1,psouth,pnorth,mpierr)
+    !    allocate(tmpyd(istart:iend),tmpyu(istart:iend))
+    !    allocate(tmpyl(jstart:jend),tmpyr(jstart:jend))
+    !endif
 
     call mpi_type_vector(ly1,1,lx1,MPI_DOUBLE_PRECISION,edge,mpierr)
     call mpi_type_commit(edge,mpierr)
@@ -101,12 +127,9 @@ subroutine setup()
 
     dimsf2d(1) = int(nx/stride)
     dimsf2d(2) = int(ny/stride)
-    !dimsf2d = (/nx,ny/)
     
     chunk_dims2d(1) = int((iend-istart+1)/stride)
     chunk_dims2d(2) = int((jend-jstart+1)/stride)
-    !chunk_dims2d(1) = iend-istart+1
-    !chunk_dims2d(2) = jend-jstart+1
 
     ic = int(0.5*nx)
     jc = int(0.5*ny)
@@ -158,8 +181,8 @@ subroutine setup()
     omega = 2*pai*freq 
     lambda = c/freq 
 
-    pc = orgs(1)*dx
-    pw = pw*dx
+    !pc = orgs(1)*dx
+    !pw = pw*dx
 
     if(myrank.eq.0) then
         open(30,file="sim.out")
@@ -248,7 +271,6 @@ subroutine setup()
     imat(1,1) = 1
     imat(2,2) = 1
     imat(3,3) = 1
-
     
     omat(1,1) = nu
     omat(1,2) = wc(3)

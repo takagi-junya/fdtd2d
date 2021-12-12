@@ -20,7 +20,7 @@ module constants
    integer :: ostart,oend
    !integer :: odom(4)
    integer :: stride                
-   integer :: comp(9)              
+   integer :: comp(10)              
    integer :: of,io,jo             
                 
    !/far/
@@ -50,7 +50,7 @@ module constants
    !/plasma
    integer :: pls
    real(kind=8) :: prad,erad
-   real(kind=8) :: nu,wp,wc(3)
+   real(kind=8) :: nu,wp,wc(3),kBTe,eV
    real(kind=8) :: imat(3,3),omat(3,3),sa(3,3),sb(3,3),sab(3,3),tc(3,3)
 
    integer ::ifed,jfed,kfed
@@ -82,6 +82,7 @@ module constants
    real(kind=8) :: sgex,sgey,sgez
    real(kind=8),parameter::eps0=8.854187817d-12,mu0=1.2566370614d-6 
    real(kind=8),parameter::qe=1.602176462d-19,mel = 9.10938188d-31
+   real(kind=8),parameter::ckBTe=1.602176462d-19
    real(kind=8),parameter::c=2.99792458d8,z0=376.73031d0      !
    real(kind=8),parameter::radi0=1.74532925d-2               
    real(kind=8),parameter::pai=3.141592653589                
@@ -90,6 +91,7 @@ module constants
    real(kind=8),allocatable :: jx(:,:),jy(:,:),jz(:,:)
    real(kind=8),allocatable :: vx(:,:),vy(:,:),vz(:,:)
    real(kind=8),allocatable :: nd(:,:)
+   real(kind=8),allocatable :: nd1(:,:),andx(:,:),andy(:,:),tu(:,:)
    real(kind=8),allocatable :: tmpyl(:),tmpyr(:),tmpyu(:),tmpyd(:)
     
    real(kind=8),allocatable :: aex(:,:),aey(:,:),aez(:,:)

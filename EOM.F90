@@ -46,6 +46,8 @@ subroutine EOM()
         enddo
     enddo
 
+    
+    tu = 3*eV/mel/(mel*eps0*(wp**2.0d0)/(qe**2.0d0))*sa
     do j=jstart,jend
         do i=istart,iend
             if(cy_rad(i,j).le.prad) then
@@ -56,6 +58,22 @@ subroutine EOM()
                 endif
             else 
                 nd(i,j) = 0.0d0
+            endif
+        enddo
+    enddo
+
+    
+    do j=jstart,jend
+        do i=istart,iend
+            if(cy_rad(i,j).le.prad.and.cy_rad(i+1,j).le.prad) then
+                if(cy_rad(i,j).ge.radius.and.cy_rad(i+1,j).ge.radius) then
+                    andx(i,j) = nd(i,j)*dt/dx
+                endif
+            endif
+            if(cy_rad(i,j).le.prad.and.cy_rad(i,j+1).le.prad) then
+                if(cy_rad(i,j).ge.radius.and.cy_rad(i,j+1).ge.radius) then
+                    andy(i,j) = nd(i,j)*dt/dy
+                endif
             endif
         enddo
     enddo

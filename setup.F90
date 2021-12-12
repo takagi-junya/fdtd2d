@@ -18,7 +18,7 @@ subroutine setup()
     namelist /object/obj,med,ic,jc,lx2,ly2,epsr,radius
     !namelist /wave/amps,orgs,ang,pw,pt
     namelist /wave/mode,wshape,lx,ly,gamma0,theta0,phi0,amp,freq,tau0
-    namelist /plasma/pls,prad,erad,nu,wp,wc
+    namelist /plasma/pls,prad,erad,nu,wp,wc,eV
     namelist /mpip/prx,pry
 
     open(10,file="param.inp",action="read")
@@ -56,6 +56,8 @@ subroutine setup()
     wc(1) = dble(wc(1))
     wc(2) = dble(wc(2))
     wc(3) = dble(wc(3))
+    eV = dble(eV)
+    kBTe = eV*ckBTe
     
     !吸収境界
     if(abc.eq.0) then
@@ -159,6 +161,7 @@ subroutine setup()
         if(pls.ge.5) then
             allocate(vx(istart-1:iend+1,jstart-1:jend+1),vy(istart-1:iend+1,jstart-1:jend+1),vz(istart-1:iend+1,jstart-1:jend+1))
             allocate(avx(istart-1:iend+1,jstart-1:jend+1),avy(istart-1:iend+1,jstart-1:jend+1),avz(istart-1:iend+1,jstart-1:jend+1))
+            allocate(nd1(istart-1:iend+1,jstart-1:jend+1),tu(istart-1:iend+1,jstart-1:jend+1))
         endif
     endif
 

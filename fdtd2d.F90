@@ -74,6 +74,10 @@ program fdtd2d
             call e_add_LCPwave()
         endif
 
+        if(pls.ge.5) then 
+            call ndensity1()
+        endif
+        
         call epml()
         
         if(mode.eq.1) then 

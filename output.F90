@@ -57,6 +57,9 @@ module output
       if(comp(9).eq.1) then
          call h5popen(filename(9),groupname(9),file_id(9),group_id(9),plist_id(9),0,comm2d,info,hdferr)
       endif
+      if(comp(10).eq.1) then
+         call h5popen(filename(10),groupname(10),file_id(10),group_id(10),plist_id(10),0,comm2d,info,hdferr)
+      endif
    end subroutine 
 
    subroutine out_emf(n)
@@ -102,6 +105,9 @@ module output
          if(comp(9).eq.1) then
             call wrt2p(group_id(9),plist_id(9),tag,dimsf2d,chunk_dims2d,coords,jz(istart:iend:stride,jstart:jend:stride))
          endif
+         if(comp(10).eq.1) then
+            call wrt2p(group_id(10),plist_id(10),tag,dimsf2d,chunk_dims2d,coords,nd(istart:iend:stride,jstart:jend:stride))
+         endif
          h5count = h5count + 1  
       endif
       
@@ -137,6 +143,9 @@ module output
       endif
       if(comp(9).eq.1) then
          call h5pclose(file_id(9),group_id(9),plist_id(8),istat1(9))
+      endif
+      if(comp(10).eq.1) then
+         call h5pclose(file_id(10),group_id(10),plist_id(10),istat1(10))
       endif
       if((myrank.eq.outputrank).and.(of.eq.1)) then
          write(*,*)"close file"

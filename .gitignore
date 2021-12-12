@@ -1,7 +1,5 @@
 *.o
 *.err
 *.out
-*.inp
 *.mod
-Makefile
 fdtd
